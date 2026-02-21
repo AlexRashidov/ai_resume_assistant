@@ -8,13 +8,17 @@ interface HistoryItem {
   timestamp: number
 }
 
-// --- Реактивные переменные (ОБЯЗАТЕЛЬНО должны быть объявлены здесь) ---
+// --- Реактивные переменные ---
 const generatedResult = ref<string | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
 const lastType = ref('about')
 const lastPosition = ref('')
 const history = ref<HistoryItem[]>([])
+
+// --- Защита от частых запросов ---
+const isThrottled = ref(false)
+const lastRequestTime = ref(0)
 
 // --- Composables ---
 const { generateDescription } = useAI()
@@ -24,7 +28,11 @@ const { generateDescription } = useAI()
 onMounted(() => {
   const savedHistory = localStorage.getItem('generationHistory')
   if (savedHistory) {
-    history.value = JSON.parse(savedHistory)
+    try {
+      history.value = JSON.parse(savedHistory)
+    } catch (e) {
+      console.error('Failed to parse history')
+    }
   }
 
   // Загружаем последний результат (для отображения)
@@ -68,10 +76,27 @@ const copyToClipboard = async (text: string) => {
 
 // Основной обработчик генерации
 const handleGenerate = async (data: { position: string; experience: string; type: string }) => {
+  // Проверка на частые запросы
+  if (isThrottled.value) {
+    errorMessage.value = 'Подожди 3 секунды перед следующим запросом'
+    return
+  }
+
+  // Проверка на минимальное время между запросами (3 секунды)
+  const now = Date.now()
+  if (now - lastRequestTime.value < 3000) {
+    errorMessage.value = 'Слишком часто! Подожди немного'
+    return
+  }
+
   isLoading.value = true
   errorMessage.value = null
   lastType.value = data.type
   lastPosition.value = data.position
+
+  // Включаем троттлинг
+  isThrottled.value = true
+  lastRequestTime.value = now
 
   try {
     const response = await generateDescription(data.position, data.experience, data.type)
@@ -79,9 +104,22 @@ const handleGenerate = async (data: { position: string; experience: string; type
     saveToHistory(response.result, data.type, data.position)
   } catch (err: any) {
     console.error('Generation error:', err)
-    errorMessage.value = err.message || 'Произошла ошибка при генерации'
+
+    // Обработка разных ошибок
+    if (err.status === 429) {
+      errorMessage.value = 'Превышен лимит запросов к API. Подожди минуту и попробуй снова.'
+    } else if (err.message?.includes('fetch failed')) {
+      errorMessage.value = 'Ошибка соединения с API. Попробуй позже.'
+    } else {
+      errorMessage.value = err.message || 'Произошла ошибка при генерации'
+    }
   } finally {
     isLoading.value = false
+
+    // Снимаем троттлинг через 3 секунды
+    setTimeout(() => {
+      isThrottled.value = false
+    }, 3000)
   }
 }
 </script>
@@ -108,6 +146,11 @@ const handleGenerate = async (data: { position: string; experience: string; type
             :is-loading="isLoading"
         />
 
+        <!-- Индикатор троттлинга -->
+        <div v-if="isThrottled && !isLoading" class="mt-4 text-sm text-orange-500 dark:text-orange-400 text-center">
+          ⏳ Подожди 3 секунды перед следующим запросом
+        </div>
+
         <!-- Loader с анимацией -->
         <div v-if="isLoading" class="mt-8 animate-fade-in">
           <Loader />
@@ -124,7 +167,7 @@ const handleGenerate = async (data: { position: string; experience: string; type
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Результат:</h3>
 
             <div class="flex items-center gap-3">
-              <!-- Кнопка PDF (комментарий, если компонент еще не создан) -->
+              <!-- Кнопка PDF (закомментирована, пока не создан компонент) -->
               <!-- <PDFButton
                 v-if="generatedResult"
                 :text="generatedResult"
