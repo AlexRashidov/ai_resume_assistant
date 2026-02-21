@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Правильный URL для Gemini 1.5 Flash
-        const geminiUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent'
+        const geminiUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent'
 
         // Отправляем запрос к Gemini API
         const response = await $fetch<GeminiResponse>(geminiUrl, {
