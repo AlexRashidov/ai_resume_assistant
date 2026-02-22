@@ -2,7 +2,7 @@ import prisma from '../../db/client'
 import { useRuntimeConfig } from '#imports'
 import jwt from 'jsonwebtoken'
 import { defineEventHandler, readBody, createError } from 'h3'
-import useAuth from '../../middleware/auth'
+//import useAuth from '../../middleware/auth'
 
 // Типы для Gemini API
 interface GeminiResponse {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
         // ========== АВТОРИЗАЦИЯ ==========
         let userId = null
         try {
-            await useAuth(event)
+           // await useAuth(event)
             userId = event.context.userId
         } catch {
             // Если не авторизован - просим войти

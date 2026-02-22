@@ -1,12 +1,12 @@
 import { defineEventHandler, createError } from 'h3'
-import useAuth from '../../middleware/auth'
+// useAuth from '../../middleware/auth'
 import prisma from '../../db/client'
 
 export default defineEventHandler(async (event) => {
     try {
         // Пытаемся авторизоваться, но не кидаем ошибку если нет токена
         try {
-            await useAuth(event)
+            //await useAuth(event)
         } catch {
             // Если авторизация не прошла - просто возвращаем пустой массив
             return { resumes: [] }
