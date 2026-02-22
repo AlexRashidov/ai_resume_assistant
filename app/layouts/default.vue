@@ -30,7 +30,7 @@ const handleLogout = async () => {
   try {
     await logout()
     isAuthenticated.value = false
-    await router.push('/login')
+    // Не делаем router.push, так как уже есть редирект в logout
   } catch (error) {
     console.error('Logout error:', error)
   }

@@ -13,12 +13,32 @@ export const useAuth = () => {
     }
 
     const logout = async () => {
-        await $fetch('/api/auth/logout', {
-            method: 'POST',
-            credentials: 'include'
-        })
-        await navigateTo('/login')
+        try {
+            await $fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            })
+
+            // Перенаправляем на главную после выхода
+            await navigateTo('/')
+
+            // Перезагружаем страницу, чтобы обновить состояние
+            window.location.reload()
+        } catch (err: any) {
+            console.error('Logout error:', err)
+        }
     }
 
-    return { login, logout }
+    const checkAuth = async () => {
+        try {
+            await $fetch('/api/auth/me', {
+                credentials: 'include'
+            })
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    return { login, logout, checkAuth }
 }

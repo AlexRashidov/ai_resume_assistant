@@ -1,18 +1,30 @@
 import { defineEventHandler, createError } from 'h3'
-//import useAuth from '../../middleware/useAuth.ts.bak'
-import prisma from '../../db/client' // <-- default import
+import useAuth from '../../middleware/auth'
+import prisma from '../../db/client'
 
 export default defineEventHandler(async (event) => {
- //   await useAuth(event) // ✅ функция middleware
+    try {
+        // Проверяем авторизацию
+        await useAuth(event)
 
-    const userId = event.context.userId
-    if (!userId) throw createError({ statusCode: 401, message: 'Unauthorized' })
+        const userId = event.context.userId
+        if (!userId) {
+            throw createError({ statusCode: 401, message: 'Unauthorized' })
+        }
 
-    const history = await prisma.resumeHistory.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        take: 20
-    })
+        // Получаем историю
+        const history = await prisma.resume.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        })
 
-    return history
+        return { resumes: history }
+    } catch (error: any) {
+        console.error('History error:', error)
+        throw createError({
+            statusCode: error.statusCode || 500,
+            message: error.message || 'Failed to fetch history'
+        })
+    }
 })
