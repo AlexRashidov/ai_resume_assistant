@@ -24,12 +24,14 @@ const lastRequestTime = ref(0)
 const { generateDescription } = useAI()
 
 // --- Загрузка истории с localStorage ---
-onMounted(() => {
-  const savedHistory = localStorage.getItem('generationHistory')
-  if (savedHistory) history.value = JSON.parse(savedHistory)
-
-  const lastResult = localStorage.getItem('lastResult')
-  if (lastResult) generatedResult.value = lastResult
+onMounted(async () => {
+  if (isAuthenticated) {
+    try {
+      history.value = await getHistory()
+    } catch (e) {
+      console.error('Failed to fetch history:', e)
+    }
+  }
 })
 
 // --- Сохранение в историю ---

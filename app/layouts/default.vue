@@ -22,6 +22,8 @@ const checkAuth = async () => {
     isAuthenticated.value = true
   } catch {
     isAuthenticated.value = false
+    // Если не авторизован - не ломаем страницу
+    return
   }
 }
 
