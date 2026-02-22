@@ -13,6 +13,7 @@ onMounted(async () => {
 })
 
 // Проверка авторизации через API
+// Проверка авторизации через API
 const checkAuth = async () => {
   try {
     await $fetch('/api/auth/me', {
