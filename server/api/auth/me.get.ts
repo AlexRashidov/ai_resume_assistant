@@ -1,10 +1,10 @@
 import { defineEventHandler } from 'h3'
-import useAuth from '../../middleware/auth'
+//import useAuth from '../../middleware/auth'
 
 export default defineEventHandler(async (event) => {
     try {
         // Проверяем авторизацию
-        await useAuth(event)
+        //await useAuth(event)
 
         // Если дошли сюда - пользователь авторизован
         return {
