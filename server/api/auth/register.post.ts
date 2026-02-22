@@ -1,17 +1,20 @@
-import prisma from '../../db/client'
+import { defineEventHandler, readBody, createError } from 'h3'
 import bcrypt from 'bcrypt'
+import prisma from '../../db/client'
 
 export default defineEventHandler(async (event) => {
     try {
-        const body = await readBody(event)
-        const { email, password } = body as { email: string; password: string }
+        const { email, password } = await readBody(event)
 
         if (!email || !password) {
             throw createError({ statusCode: 400, message: 'Email and password required' })
         }
 
-        // Проверяем, есть ли уже пользователь
-        const existingUser = await prisma.user.findUnique({ where: { email } })
+        // Проверяем, существует ли пользователь
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        })
+
         if (existingUser) {
             throw createError({ statusCode: 400, message: 'User already exists' })
         }
@@ -21,12 +24,21 @@ export default defineEventHandler(async (event) => {
 
         // Создаём пользователя
         const user = await prisma.user.create({
-            data: { email, password: hashedPassword },
+            data: {
+                email,
+                password: hashedPassword
+            }
         })
 
-        return { id: user.id, email: user.email }
-    } catch (err: any) {
-        console.error(err)
-        throw createError({ statusCode: err.statusCode || 500, message: err.message })
+        return {
+            id: user.id,
+            email: user.email,
+            message: 'User created successfully'
+        }
+    } catch (error: any) {
+        throw createError({
+            statusCode: error.statusCode || 500,
+            message: error.message || 'Registration failed'
+        })
     }
 })

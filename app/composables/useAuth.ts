@@ -1,12 +1,24 @@
 export const useAuth = () => {
-    const login = async (username: string, password: string) => {
-        const res = await $fetch('/api/auth/login', {
-            method: 'POST',
-            body: { username, password },
-            credentials: 'include', // важное: cookie будет отправляться автоматически
-        })
-        return res
+    const login = async (email: string, password: string) => {
+        try {
+            const response = await $fetch('/api/auth/login', {
+                method: 'POST',
+                body: { email, password },
+                credentials: 'include'
+            })
+            return response
+        } catch (err: any) {
+            throw new Error(err.data?.message || 'Login failed')
+        }
     }
 
-    return { login }
+    const logout = async () => {
+        await $fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        })
+        await navigateTo('/login')
+    }
+
+    return { login, logout }
 }
