@@ -4,28 +4,21 @@ import { defineEventHandler, getCookie, createError } from 'h3'
 export default defineEventHandler(async (event) => {
     const path = event.path || event.node.req.url
 
-    // ✅ СПИСОК ПУБЛИЧНЫХ МАРШРУТОВ - всё, что не требует авторизации
-    const publicRoutes = [
-        '/',              // главная
-        '/login',         // страница входа
-        '/register',      // страница регистрации
-        '/about',         // о проекте
-        '/_nuxt',         // статические файлы Nuxt
-        '/favicon.ico',   // иконка
-        '/api/auth/login',
-        '/api/auth/register',
-        '/api/auth/me'
-    ]
-
-    // Проверяем, публичный ли маршрут
-    const isPublic = publicRoutes.some(route => path.startsWith(route))
-    if (isPublic) {
-        return // Пропускаем без проверки токена
+    // 👇 КЛЮЧЕВОЕ: Пропускаем ВСЁ, кроме API
+    if (!path.startsWith('/api/')) {
+        return // Главная, CSS, JS, картинки - всё работает без токена
     }
 
-    // Для всего остального (включая API) - проверяем токен
+    // Теперь только API маршруты требуют проверки
     const token = getCookie(event, 'token')
 
+    // Публичные API (не требуют токена)
+    const publicApiRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/me']
+    if (publicApiRoutes.includes(path)) {
+        return // Пропускаем без токена
+    }
+
+    // Все остальные API требуют токен
     if (!token) {
         throw createError({
             statusCode: 401,
