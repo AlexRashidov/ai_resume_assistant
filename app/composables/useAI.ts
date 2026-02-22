@@ -1,28 +1,27 @@
 interface GenerateResponse {
     result: string
-    type?: string
+    type: 'about' | 'skills' | 'analysis'
 }
 
-export const useAI = () => {
-    const generateDescription = async (position: string, experience: string, type: string = 'about'): Promise<GenerateResponse> => {
-        try {
-            const response = await $fetch<GenerateResponse>('/api/generate', {
-                method: 'POST',
-                body: {
-                    position,
-                    experience,
-                    type
-                }
-            })
+type GenerateType = 'about' | 'skills' | 'analysis'
 
+export const useAI = () => {
+    const generateDescription = async (
+        position: string,
+        experience: string,
+        type: GenerateType = 'about'
+    ): Promise<GenerateResponse> => {
+        try {
+            const response = await $fetch<GenerateResponse>('/api/resume/generate', {
+                method: 'POST',
+                body: { position, experience, type }
+            })
             return response
-        } catch (error) {
-            console.error('Generation error:', error)
-            throw error
+        } catch (err) {
+            console.error('Generation error:', err)
+            throw err
         }
     }
 
-    return {
-        generateDescription
-    }
+    return { generateDescription }
 }

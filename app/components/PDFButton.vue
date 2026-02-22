@@ -4,8 +4,9 @@ import { jsPDF } from 'jspdf'
 const props = defineProps<{
   text: string
   position: string
-  type: string
+  type: 'about' | 'skills' | 'analysis'
 }>()
+
 
 const generatePDF = () => {
   const doc = new jsPDF()

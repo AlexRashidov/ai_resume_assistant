@@ -4,7 +4,8 @@ export default defineNuxtConfig({
     modules: ['@nuxtjs/tailwindcss'],
 
     runtimeConfig: {
-        geminiApiKey: process.env.GEMINI_API_KEY
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        jwtSecret: process.env.JWT_SECRET,
     },
 
     // Важно для темной темы!
