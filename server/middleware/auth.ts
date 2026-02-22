@@ -2,14 +2,21 @@ import jwt from 'jsonwebtoken'
 import { defineEventHandler, getCookie, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
+    const path = event.path || event.node.req.url
+
+    // ✅ СПАСИТЕЛЬНАЯ СТРОКА - пропускаем главную страницу всегда
+    if (path === '/' || path === '') {
+        return
+    }
+
     // Пропускаем все не-API запросы
-    if (!event.path.startsWith('/api/')) {
+    if (!path.startsWith('/api/')) {
         return
     }
 
     // Публичные API эндпоинты
     const publicApiRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/me']
-    if (publicApiRoutes.includes(event.path)) {
+    if (publicApiRoutes.includes(path)) {
         return
     }
 

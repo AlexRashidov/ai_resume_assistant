@@ -25,12 +25,14 @@ const { generateDescription } = useAI()
 
 // --- Загрузка истории с localStorage ---
 onMounted(async () => {
-  if (isAuthenticated) {
-    try {
-      history.value = await getHistory()
-    } catch (e) {
-      console.error('Failed to fetch history:', e)
-    }
+  // Проверяем, авторизован ли пользователь
+  try {
+    await $fetch('/api/auth/me', { credentials: 'include' })
+    // Если авторизован - загружаем историю
+    history.value = await getHistory()
+  } catch {
+    // Если нет - просто показываем пустую историю
+    history.value = []
   }
 })
 

@@ -4,15 +4,22 @@ import prisma from '../../db/client'
 
 export default defineEventHandler(async (event) => {
     try {
-        // Проверяем авторизацию
-        await useAuth(event)
-
-        const userId = event.context.userId
-        if (!userId) {
-            throw createError({ statusCode: 401, message: 'Unauthorized' })
+        // Пытаемся авторизоваться, но не кидаем ошибку если нет токена
+        try {
+            await useAuth(event)
+        } catch {
+            // Если авторизация не прошла - просто возвращаем пустой массив
+            return { resumes: [] }
         }
 
-        // Получаем историю
+        const userId = event.context.userId
+
+        // Если userId нет (не авторизован) - пустой массив
+        if (!userId) {
+            return { resumes: [] }
+        }
+
+        // Получаем историю только для авторизованного пользователя
         const history = await prisma.resume.findMany({
             where: { userId },
             orderBy: { createdAt: 'desc' },
@@ -22,9 +29,7 @@ export default defineEventHandler(async (event) => {
         return { resumes: history }
     } catch (error: any) {
         console.error('History error:', error)
-        throw createError({
-            statusCode: error.statusCode || 500,
-            message: error.message || 'Failed to fetch history'
-        })
+        // Вместо ошибки возвращаем пустой массив
+        return { resumes: [] }
     }
 })
