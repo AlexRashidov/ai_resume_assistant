@@ -1,5 +1,5 @@
 import { defineEventHandler, createError } from 'h3'
-import useAuth from '../../middleware/useAuth'
+import useAuth from '../../middleware/useAuth.ts.bak'
 import prisma from '../../db/client' // <-- default import
 
 export default defineEventHandler(async (event) => {
