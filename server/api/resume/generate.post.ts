@@ -1,22 +1,38 @@
-import { defineEventHandler, readBody, createError } from 'h3'
+import { defineEventHandler, readBody, createError, getCookie } from 'h3'
 import { useRuntimeConfig } from '#imports'
+import jwt from 'jsonwebtoken'
 
 export default defineEventHandler(async (event) => {
     try {
-        const { position, experience, type = 'about' } = await readBody(event)
-
-        if (!position || !experience) {
-            throw createError({ statusCode: 400, message: 'Position and experience required' })
+        // --- Проверка авторизации ---
+        const token = getCookie(event, 'token')
+        if (!token) {
+            throw createError({ statusCode: 401, message: 'Пожалуйста, авторизуйтесь или зарегистрируйтесь' })
         }
 
+        // Проверяем JWT
+        let userId: string
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
+            userId = decoded.userId
+        } catch {
+            throw createError({ statusCode: 401, message: 'Неверный токен, пожалуйста, авторизуйтесь' })
+        }
+
+        // --- Читаем тело запроса ---
+        const { position, experience, type = 'about' } = await readBody(event)
+        if (!position || !experience) {
+            throw createError({ statusCode: 400, message: 'Укажите должность и опыт' })
+        }
+
+        // --- API ключ Gemini ---
         const config = useRuntimeConfig()
         const apiKey = config.geminiApiKey
-
         if (!apiKey) {
-            throw createError({ statusCode: 500, message: 'Gemini API key not configured' })
+            throw createError({ statusCode: 500, message: 'Gemini API key не настроен' })
         }
 
-        // Формируем промпт
+        // --- Формируем промпт ---
         let promptText = ''
         switch (type) {
             case 'skills':
@@ -29,8 +45,8 @@ export default defineEventHandler(async (event) => {
                 promptText = `Ты HR-специалист. Должность: ${position}. Опыт: ${experience}. Напиши краткое описание "О себе".`
         }
 
+        // --- Запрос к Gemini ---
         const geminiUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent'
-
         const response = await $fetch(geminiUrl, {
             method: 'POST',
             params: { key: apiKey },
@@ -42,17 +58,14 @@ export default defineEventHandler(async (event) => {
         })
 
         const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text
-
         if (!generatedText) {
-            throw createError({ statusCode: 500, message: 'Empty response from Gemini' })
+            throw createError({ statusCode: 500, message: 'Пустой ответ от Gemini' })
         }
 
-        // Сохранение в БД временно отключено
-        // await prisma.resume.create({ ... })
-
+        // --- Временно не сохраняем в БД ---
         return { result: generatedText, type }
     } catch (error: any) {
         console.error('Generate error:', error)
-        throw createError({ statusCode: error.status || 500, message: error.message })
+        throw createError({ statusCode: error.status || 500, message: error.message || 'Ошибка генерации' })
     }
 })

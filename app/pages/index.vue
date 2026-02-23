@@ -25,13 +25,10 @@ const { generateDescription } = useAI()
 
 // --- Загрузка истории с localStorage ---
 onMounted(async () => {
-  // Проверяем, авторизован ли пользователь
   try {
     await $fetch('/api/auth/me', { credentials: 'include' })
-    // Если авторизован - загружаем историю
     history.value = await getHistory()
   } catch {
-    // Если нет - просто показываем пустую историю
     history.value = []
   }
 })
@@ -62,12 +59,18 @@ const copyToClipboard = async (text: string) => {
   catch { alert('Не удалось скопировать') }
 }
 
-// --- Генерация ---
+// --- Генерация резюме с проверкой авторизации ---
 const handleGenerate = async (data: { position: string; experience: string; type: 'about' | 'skills' | 'analysis' }) => {
-  if (isThrottled.value) { errorMessage.value = 'Подожди 3 секунды'; return }
+  if (isThrottled.value) {
+    errorMessage.value = 'Подожди 3 секунды';
+    return
+  }
 
   const now = Date.now()
-  if (now - lastRequestTime.value < 3000) { errorMessage.value = 'Слишком часто!'; return }
+  if (now - lastRequestTime.value < 3000) {
+    errorMessage.value = 'Слишком часто!';
+    return
+  }
 
   isLoading.value = true
   errorMessage.value = null
@@ -82,9 +85,17 @@ const handleGenerate = async (data: { position: string; experience: string; type
     saveToHistory(response.result, data.type, data.position)
   } catch (err: any) {
     console.error('Generation error:', err)
-    if (err.status === 429) errorMessage.value = 'Превышен лимит запросов'
-    else if (err.message?.includes('fetch failed')) errorMessage.value = 'Ошибка соединения с API'
-    else errorMessage.value = err.message || 'Ошибка генерации'
+
+    if (err.statusCode === 401) {
+      // --- Сообщение для гостей ---
+      errorMessage.value = err.data?.message || 'Пожалуйста, авторизуйтесь или зарегистрируйтесь'
+    } else if (err.status === 429) {
+      errorMessage.value = 'Превышен лимит запросов'
+    } else if (err.message?.includes('fetch failed')) {
+      errorMessage.value = 'Ошибка соединения с API'
+    } else {
+      errorMessage.value = err.message || 'Ошибка генерации'
+    }
   } finally {
     isLoading.value = false
     setTimeout(() => { isThrottled.value = false }, 3000)
@@ -122,6 +133,7 @@ const handleGenerate = async (data: { position: string; experience: string; type
           <Loader />
         </div>
 
+        <!-- Ошибки -->
         <div v-if="errorMessage" class="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-shake">
           <p class="text-red-700 dark:text-red-400">{{ errorMessage }}</p>
         </div>
@@ -205,7 +217,7 @@ const handleGenerate = async (data: { position: string; experience: string; type
 </template>
 
 <style scoped>
-/* Анимации (как у тебя были) */
+/* Анимации */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-down { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
