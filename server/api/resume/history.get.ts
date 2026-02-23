@@ -1,5 +1,4 @@
 import { defineEventHandler, createError } from 'h3'
-// useAuth from '../../middleware/auth'
 import prisma from '../../db/client'
 
 export default defineEventHandler(async (event) => {

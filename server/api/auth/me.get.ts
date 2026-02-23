@@ -1,21 +1,25 @@
-import { defineEventHandler } from 'h3'
-//import useAuth from '../../middleware/auth'
+import { defineEventHandler, getCookie } from 'h3'
+import jwt from 'jsonwebtoken'
 
 export default defineEventHandler(async (event) => {
-    try {
-        // Проверяем авторизацию
-        //await useAuth(event)
+    const token = getCookie(event, 'token')
 
-        // Если дошли сюда - пользователь авторизован
+    if (!token) {
+        return {
+            authenticated: false
+        }
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number }
+
         return {
             authenticated: true,
-            userId: event.context.userId
+            userId: decoded.userId
         }
     } catch (error) {
-        // Не авторизован
-        throw createError({
-            statusCode: 401,
-            message: 'Unauthorized'
-        })
+        return {
+            authenticated: false
+        }
     }
 })

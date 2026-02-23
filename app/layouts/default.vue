@@ -1,38 +1,21 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useAuth } from '~/composables/useAuth'
+import { useTheme } from '~/composables/useTheme'
+
 const { isDark, toggleTheme, initTheme } = useTheme()
-const { logout } = useAuth()
-const router = useRouter()
+const { logout, checkAuth, user } = useAuth()
 
-// Состояние авторизации (можно заменить на store)
-const isAuthenticated = ref(false)
-
-// Проверяем авторизацию при загрузке
+// Инициализация темы и проверка авторизации при загрузке
 onMounted(async () => {
   initTheme()
-  await checkAuth()
+  await checkAuth() // обновит user.userId автоматически
 })
-
-// Проверка авторизации через API
-// Проверка авторизации через API
-const checkAuth = async () => {
-  try {
-    await $fetch('/api/auth/me', {
-      credentials: 'include'
-    })
-    isAuthenticated.value = true
-  } catch {
-    isAuthenticated.value = false
-    // Если не авторизован - не ломаем страницу
-
-  }
-}
 
 // Выход
 const handleLogout = async () => {
   try {
     await logout()
-    isAuthenticated.value = false
-    // Не делаем router.push, так как уже есть редирект в logout
   } catch (error) {
     console.error('Logout error:', error)
   }
@@ -41,16 +24,19 @@ const handleLogout = async () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300 flex flex-col">
+
     <!-- Шапка -->
     <header class="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm sticky top-0 z-10">
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
-          <!-- Логотип (ссылка на главную) -->
+
+          <!-- Логотип -->
           <NuxtLink to="/" class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 text-transparent bg-clip-text hover:opacity-80 transition">
             ResumeAI
           </NuxtLink>
 
           <div class="flex items-center gap-4">
+
             <!-- Навигация -->
             <nav class="space-x-4">
               <NuxtLink to="/" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
@@ -59,14 +45,14 @@ const handleLogout = async () => {
               <NuxtLink to="/about" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
                 О проекте
               </NuxtLink>
-              <NuxtLink v-if="isAuthenticated" to="/history" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
+              <NuxtLink v-if="user.userId" to="/history" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
                 История
               </NuxtLink>
             </nav>
 
             <!-- Кнопки авторизации -->
             <div class="flex items-center gap-2">
-              <template v-if="!isAuthenticated">
+              <template v-if="!user.userId">
                 <NuxtLink
                     to="/login"
                     class="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition"
@@ -99,6 +85,7 @@ const handleLogout = async () => {
                 <span v-else class="text-xl">🌙</span>
               </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -115,5 +102,6 @@ const handleLogout = async () => {
         © 2026 ResumeAI. Создано с помощью ИИ
       </div>
     </footer>
+
   </div>
 </template>
